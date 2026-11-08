@@ -1,0 +1,16 @@
+plugins {
+    id 'com.android.application'
+}
+
+android {
+    namespace 'com.example.workbuddyassistant'
+    compileSdk 35
+
+    defaultConfig {
+        applicationId 'com.example.workbuddyassistant'
+        minSdk 23
+        targetSdk 32
+        versionCode 2
+        versionName '1.1.0'
+    }
+}
