@@ -159,7 +159,11 @@ public class MainActivity extends Activity {
         LinearLayout.LayoutParams homeLp = match();
         homeLp.topMargin = dp(12);
         page.addView(home, homeLp);
-        home.setOnClickListener(v -> openUrl(OFFICIAL_URL, "无法打开 WorkBuddy 官方网站，请检查浏览器或网络。"));
+        home.setOnClickListener(v -> {
+            if (openUrl(OFFICIAL_URL, "无法打开 WorkBuddy 官方网站，请检查浏览器或网络。")) {
+                setStatus("已打开 WorkBuddy 官方网站。", true);
+            }
+        });
 
         Button mail = button("打开邮箱查看验证邮件", Color.rgb(43, 119, 105));
         LinearLayout.LayoutParams mailLp = match();
@@ -193,7 +197,11 @@ public class MainActivity extends Activity {
         LinearLayout.LayoutParams guideLp = match();
         guideLp.topMargin = dp(10);
         info.addView(guide, guideLp);
-        guide.setOnClickListener(v -> openUrl(OFFICIAL_GUIDE_URL, "无法打开官方注册指南，请稍后重试。"));
+        guide.setOnClickListener(v -> {
+            if (openUrl(OFFICIAL_GUIDE_URL, "无法打开官方注册指南，请稍后重试。")) {
+                setStatus("已打开官方注册指南。", true);
+            }
+        });
 
         TextView safety = text(
                 "隐私边界：不索取邮箱密码，不读取验证码，不保存登录令牌，不自动勾选协议，也不绕过验证码、第三方授权或服务端校验。",
@@ -215,9 +223,10 @@ public class MainActivity extends Activity {
                 .setMessage("确认后，本应用会把邮箱复制到剪贴板并打开 WorkBuddy 官方注册指引。若官方页面提供邮箱输入框，请由你手动粘贴；如果页面只提供 Google、GitHub 或 X，请按官方流程自行授权。")
                 .setNegativeButton("取消", (dialog, which) -> {})
                 .setPositiveButton("继续", (dialog, which) -> {
-                    copyToClipboard(email);
-                    openUrl(OFFICIAL_GUIDE_URL, "邮箱已复制，但无法打开官方注册指引。请检查浏览器或网络。");
-                    setStatus("邮箱已复制。请在官方页面确认是否提供邮箱入口，再由你手动粘贴。", true);
+                    if (!copyToClipboard(email)) return;
+                    if (openUrl(OFFICIAL_GUIDE_URL, "邮箱已复制，但无法打开官方注册指引。请检查浏览器或网络。")) {
+                        setStatus("邮箱已复制。请在官方页面确认是否提供邮箱入口，再由你手动粘贴。", true);
+                    }
                 })
                 .show();
     }
@@ -261,7 +270,7 @@ public class MainActivity extends Activity {
     private void copyEmail() {
         String email = currentEmail();
         if (email == null) return;
-        copyToClipboard(email);
+        if (!copyToClipboard(email)) return;
         setStatus("邮箱已复制到剪贴板。", true);
     }
 
@@ -287,24 +296,33 @@ public class MainActivity extends Activity {
         }
     }
 
-    private void copyToClipboard(String email) {
-        ClipboardManager manager =
-                (ClipboardManager) getSystemService(Context.CLIPBOARD_SERVICE);
-        if (manager == null) {
-            setStatus("系统剪贴板不可用，请检查设备设置。", false);
-            return;
+    private boolean copyToClipboard(String email) {
+        try {
+            ClipboardManager manager =
+                    (ClipboardManager) getSystemService(Context.CLIPBOARD_SERVICE);
+            if (manager == null) {
+                setStatus("系统剪贴板不可用，请检查设备设置。", false);
+                return false;
+            }
+            manager.setPrimaryClip(ClipData.newPlainText("Email address", email));
+            return true;
+        } catch (Exception e) {
+            setStatus("复制邮箱失败，请检查系统剪贴板设置。", false);
+            return false;
         }
-        manager.setPrimaryClip(ClipData.newPlainText("Email address", email));
     }
 
-    private void openUrl(String url, String errorMessage) {
+    private boolean openUrl(String url, String errorMessage) {
         try {
             Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
             startActivity(intent);
+            return true;
         } catch (ActivityNotFoundException | SecurityException e) {
             setStatus(errorMessage, false);
+            return false;
         } catch (Exception e) {
             setStatus(errorMessage, false);
+            return false;
         }
     }
 
