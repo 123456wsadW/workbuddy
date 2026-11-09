@@ -27,11 +27,23 @@ jobs:
           packages: 'platform-tools platforms;android-35 build-tools;35.0.0'
       - name: Build debug APK
         run: gradle --no-daemon assembleDebug
-      - name: Verify APK
-        run: test -s app/build/outputs/apk/debug/app-debug.apk
+      - name: Verify APK metadata and checksum
+        shell: bash
+        run: |
+          APK=app/build/outputs/apk/debug/app-debug.apk
+          test -s "$APK"
+          AAPT="$ANDROID_HOME/build-tools/35.0.0/aapt"
+          "$AAPT" dump badging "$APK" > app/build/outputs/apk/debug/badging.txt
+          grep -F "package: name='com.example.workbuddyassistant' versionCode='3' versionName='1.2.0'" app/build/outputs/apk/debug/badging.txt
+          grep -F "sdkVersion:'23'" app/build/outputs/apk/debug/badging.txt
+          grep -F "targetSdkVersion:'32'" app/build/outputs/apk/debug/badging.txt
+          sha256sum "$APK" > "$APK.sha256"
+          cat "$APK.sha256"
       - uses: actions/upload-artifact@v4
         with:
-          name: WorkBuddyRegisterAssistant-debug
-          path: app/build/outputs/apk/debug/app-debug.apk
+          name: WorkBuddyRegisterAssistant-1.2.0-debug
+          path: |
+            app/build/outputs/apk/debug/app-debug.apk
+            app/build/outputs/apk/debug/app-debug.apk.sha256
           if-no-files-found: error
           retention-days: 14
